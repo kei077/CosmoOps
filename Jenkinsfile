@@ -20,16 +20,12 @@ pipeline {
 
         stage('Build Jar') {
             steps {
-                script {
-                    echo "Compiling project using Maven in Docker (Java 21)..."
-                    sh """
-                        cd ${WORKSPACE}/backend && \
-                        docker run --rm \
-                        -v "\$(pwd):/app" \
-                        -w /app \
+                dir('backend') {
+                    sh '''
+                        docker run \
                         maven:3.9.6-eclipse-temurin-21 \
                         mvn clean package -DskipTests
-                    """
+                    '''
                 }
             }
         }
