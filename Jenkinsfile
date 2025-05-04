@@ -44,7 +44,8 @@ pipeline {
     post {
         always {
             echo 'Cleaning up Docker containers...'
-            sh 'docker-compose down'
+            node {
+		sh 'docker-compose down'
         }
     }
 }
