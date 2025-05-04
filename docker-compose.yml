@@ -39,9 +39,32 @@ services:
       - backend
     networks:
       - my_network
+  prometheus:
+    image: prom/prometheus
+    container_name: HamlaouiPrometheus-Cont
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - my_network
+
+  grafana:
+    image: grafana/grafana
+    container_name: HamlaouiGrafana-Cont
+    ports:
+      - "3000:3000"
+    networks:
+      - my_network
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+
 
 volumes:
   postgres_data:
+  grafana_data
 
 networks:
   my_network:
