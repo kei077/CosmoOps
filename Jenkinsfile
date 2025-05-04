@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven 3'
+    }
+
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
         DOCKER_COMPOSE = './docker-compose.yml'
