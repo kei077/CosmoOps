@@ -19,15 +19,12 @@ pipeline {
         }
 
         stage('Build Jar') {
+            tools {
+                maven 'Maven 3'
+            }
             steps {
                 dir('backend') {
-                    sh '''
-                        docker run --rm \
-                        -v "$PWD":/app \
-                        -w /app \
-                        maven:3.9.6-eclipse-temurin-21 \
-                        mvn clean package -DskipTests
-                    '''
+                    sh 'mvn clean package -DskipTests'
                 }
             }
         }
