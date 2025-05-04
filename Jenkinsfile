@@ -15,14 +15,14 @@ pipeline {
         stage('Build Jar') {
             steps {
                 script {
-                    echo "Compiling project using Maven in Docker (Java 21)..."
-                    sh '''
-                        docker run --rm \
-                        -v "${WORKSPACE}/backend":/app \
-                        -w /app \
-                        maven:3.9.6-eclipse-temurin-21 \
-                        mvn clean package -DskipTests
-                    '''
+                echo "Compiling project using Maven in Docker (Java 21)..."
+                sh '''
+                    docker run --rm \
+                    -v "${WORKSPACE}":/app \  
+                    -w /app \                 
+                    maven:3.9.6-eclipse-temurin-21 \
+                    mvn clean package -DskipTests
+                '''
                 }
             }
         }
@@ -50,23 +50,23 @@ pipeline {
 
 
         stage('Run App') {
-            when {
-                expression { currentBuild.resultIsBetterOrEqualTo('SUCCESS') }
-            }
-            steps {
-                echo "Launching app with Docker Compose..."
-                sh 'docker-compose up -d'
+                when {
+                    expression { currentBuild.resultIsBetterOrEqualTo('SUCCESS') }
+                }
+                steps {
+                    echo "Launching app with Docker Compose..."
+                    sh 'docker-compose up -d'
+                }
             }
         }
-    }
 
-    post {
-        always {
-            echo "Cleaning up Docker containers..."
-            sh 'docker-compose down || true'
+        post {
+            always {
+                echo "Cleaning up Docker containers..."
+                sh 'docker-compose down || true'
+            }
+            failure {
+                echo "Pipeline failed. Please check the logs above."
+            }
         }
-        failure {
-            echo "Pipeline failed. Please check the logs above."
-        }
-    }
 }
