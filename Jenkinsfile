@@ -14,6 +14,14 @@ pipeline {
             }
         }
 
+        stage('Build Jar') {
+            steps {
+                dir('backend') {
+                    sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
+
         stage('Build Docker Images') {
             steps {
                 sh 'docker-compose build'
@@ -28,7 +36,7 @@ pipeline {
                         -Dsonar.projectName=cosmo-tracker \
                         -Dsonar.sources=src \
                         -Dsonar.java.binaries=target \
-                        -Dsonar.host.url=http://192.168.43.163:9000 \
+                        -Dsonar.host.url=http://192.168.240.198:9000 \
                         -Dsonar.login=squ_f68c3c1d56ff4c07b513fd92e8d18970ab0a7cb9'''
                 }
             }
