@@ -43,7 +43,7 @@ services:
     image: prom/prometheus
     container_name: HamlaouiPrometheus-Cont
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/
     ports:
       - "9090:9090"
     networks:
