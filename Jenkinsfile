@@ -72,7 +72,7 @@ pipeline {
                             cd backend && \
                             mvn sonar:sonar \
                             -Dsonar.projectKey=cosmo-backend \
-                            -Dsonar.host.url=http://192.168.240.198:9000 \
+                            -Dsonar.host.url=http://10.1.11.224:9000 \
                             -Dsonar.login=$SONAR_TOKEN
                         """
                     }
