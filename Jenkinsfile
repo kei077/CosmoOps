@@ -34,18 +34,19 @@ pipeline {
             }
         }
 
-        steps {
-            withSonarQubeEnv('SonarQube') {
-                sh '''
-                    cd backend
-                    mvn sonar:sonar \
-                        -Dsonar.projectKey=cosmo-backend \
-                        -Dsonar.host.url=http://192.168.240.198:9000 \
-                        -Dsonar.login=$SONAR_TOKEN
-                '''
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        cd backend
+                        mvn sonar:sonar \
+                            -Dsonar.projectKey=cosmo-backend \
+                            -Dsonar.host.url=http://192.168.240.198:9000 \
+                            -Dsonar.login=$SONAR_TOKEN
+                    '''
+                }
             }
         }
-
 
         stage('Run App') {
             when {
