@@ -18,7 +18,7 @@ pipeline {
                     echo "Compiling project using Maven in Docker (Java 21)..."
                     sh """
                         docker run --rm \
-                        -v "${WORKSPACE}":/app \
+                        -v "${WORKSPACE}"/backend/app \
                         -w /app \
                         maven:3.9.6-eclipse-temurin-21 \
                         mvn clean package -DskipTests
