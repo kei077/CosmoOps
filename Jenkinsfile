@@ -1,53 +1,58 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven 3'
-    }
-
     environment {
-        SCANNER_HOME = tool 'sonar-scanner'
-        DOCKER_COMPOSE = './docker-compose.yml'
-        IMAGE_TAG = 'latest'
+        DOCKER_BUILDKIT = '1'
     }
 
     stages {
-        stage('Git Checkout') {
+        stage('Checkout') {
             steps {
-                git branch: 'main', changelog: false, poll: false, url: 'https://github.com/kei077/CosmoOps.git'           
+                checkout scm
             }
         }
 
         stage('Build Jar') {
             steps {
-                sh '''
-                    docker run --rm -v "${WORKSPACE}/backend":/app -w /app maven:3.9.6-eclipse-temurin-21 mvn clean package -DskipTests
-                '''
+                script {
+                    echo "Compiling project using Maven in Docker (Java 21)..."
+                    sh '''
+                        docker run --rm \
+                        -v "${WORKSPACE}/backend":/app \
+                        -w /app \
+                        maven:3.9.6-eclipse-temurin-21 \
+                        mvn clean package -DskipTests
+                    '''
+                }
             }
         }
 
         stage('Build Docker Images') {
             steps {
+                echo "Building Docker images..."
                 sh 'docker-compose build'
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                dir('backend') {
-                    sh '''${SCANNER_HOME}/bin/sonar-scanner \
-                        -Dsonar.projectKey=cosmo-tracker \
-                        -Dsonar.projectName=cosmo-tracker \
-                        -Dsonar.sources=src \
-                        -Dsonar.java.binaries=target \
+        steps {
+            withSonarQubeEnv('SonarQube') {
+                sh '''
+                    cd backend
+                    mvn sonar:sonar \
+                        -Dsonar.projectKey=cosmo-backend \
                         -Dsonar.host.url=http://192.168.240.198:9000 \
-                        -Dsonar.login=squ_f68c3c1d56ff4c07b513fd92e8d18970ab0a7cb9'''
-                }
+                        -Dsonar.login=$SONAR_TOKEN
+                '''
             }
         }
 
+
         stage('Run App') {
+            when {
+                expression { currentBuild.resultIsBetterOrEqualTo('SUCCESS') }
+            }
             steps {
+                echo "Launching app with Docker Compose..."
                 sh 'docker-compose up -d'
             }
         }
@@ -55,9 +60,11 @@ pipeline {
 
     post {
         always {
-            echo 'Cleaning up Docker containers...'
-            sh 'docker-compose down'
+            echo "Cleaning up Docker containers..."
+            sh 'docker-compose down || true'
+        }
+        failure {
+            echo "Pipeline failed. Please check the logs above."
         }
     }
 }
-
