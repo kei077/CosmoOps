@@ -18,13 +18,24 @@ pipeline {
             }
         }
 
+        stage('Run Tests') {
+            tools {
+                maven 'Maven 3'
+            }
+            steps {
+                dir('backend') {
+                    sh 'mvn test'
+                }
+            }
+        }
+
         stage('Build Jar') {
             tools {
                 maven 'Maven 3'
             }
             steps {
                 dir('backend') {
-                    sh 'mvn clean package -DskipTests'
+                    sh 'mvn clean package'
                 }
             }
         }
@@ -43,13 +54,13 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-                        sh """
-                            cd backend && \
+                        sh '''
+                            cd backend
                             mvn sonar:sonar \
                             -Dsonar.projectKey=cosmo-backend \
                             -Dsonar.host.url=http://192.168.240.198:9000 \
                             -Dsonar.login=$SONAR_TOKEN
-                        """
+                        '''
                     }
                 }
             }
@@ -64,15 +75,6 @@ pipeline {
                 sh 'docker-compose up -d'
             }
         }
-
-        stage('Run Tests') {
-            steps {
-                dir('backend') {
-                    sh 'mvn test'
-                }
-            }
-        }
-
     }
 
     post {
