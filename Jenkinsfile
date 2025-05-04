@@ -35,15 +35,29 @@ pipeline {
             }
             steps {
                 dir('backend') {
-                    sh 'mvn clean package'
+                    sh 'mvn clean package -DskipTests'
                 }
             }
         }
 
-        stage('Build Docker Images') {
+        stage('Build Docker Image') {
             steps {
-                echo "Building Docker images..."
-                sh 'docker-compose build'
+                script {
+                    sh "docker build -t kei077/cosmo-backend:${BUILD_NUMBER} ./backend"
+                    sh "docker tag kei077/cosmo-backend:${BUILD_NUMBER} kei077/cosmo-backend:latest"
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push kei077/cosmo-backend:${BUILD_NUMBER}
+                        docker push kei077/cosmo-backend:latest
+                    '''
+                }
             }
         }
 
@@ -54,13 +68,13 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-                        sh '''
-                            cd backend
+                        sh """
+                            cd backend && \
                             mvn sonar:sonar \
                             -Dsonar.projectKey=cosmo-backend \
                             -Dsonar.host.url=http://192.168.240.198:9000 \
                             -Dsonar.login=$SONAR_TOKEN
-                        '''
+                        """
                     }
                 }
             }

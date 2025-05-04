@@ -16,9 +16,7 @@ services:
       - my_network
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: kei077/cosmo-backend:latest
     container_name: HamlaouiBackend-Cont
     environment:
       DATABASE_USERNAME: ${DATABASE_USERNAME}
