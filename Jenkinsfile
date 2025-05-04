@@ -46,7 +46,8 @@ pipeline {
             echo 'Cleaning up Docker containers...'
             node {
 		sh 'docker-compose down'
-        }
+    		}
+	    }
     }
 }
 
