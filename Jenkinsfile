@@ -64,6 +64,15 @@ pipeline {
                 sh 'docker-compose up -d'
             }
         }
+
+        stage('Run Tests') {
+            steps {
+                dir('backend') {
+                    sh 'mvn test'
+                }
+            }
+        }
+
     }
 
     post {
