@@ -12,13 +12,19 @@ pipeline {
             }
         }
 
+        stage('Verify Structure') {
+            steps {
+                sh 'ls -la ${WORKSPACE}/backend'
+            }
+        }
+
         stage('Build Jar') {
             steps {
                 script {
                     echo "Compiling project using Maven in Docker (Java 21)..."
                     sh """
                         docker run --rm \
-                        -v "${WORKSPACE}"/backend/app \
+                        -v "${WORKSPACE}/backend:/app" \
                         -w /app \
                         maven:3.9.6-eclipse-temurin-21 \
                         mvn clean package -DskipTests
@@ -38,6 +44,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh """
+                        cd backend && \
                         mvn sonar:sonar \
                         -Dsonar.projectKey=cosmo-backend \
                         -Dsonar.host.url=http://192.168.240.198:9000 \
