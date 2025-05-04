@@ -37,6 +37,9 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
+            tools {
+                maven 'Maven 3'
+            }
             steps {
                 withSonarQubeEnv('SonarQube') {
                     withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
