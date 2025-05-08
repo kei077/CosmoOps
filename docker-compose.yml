@@ -39,11 +39,12 @@ services:
       - backend
     networks:
       - my_network
+
   prometheus:
     image: prom/prometheus
     container_name: HamlaouiPrometheus-Cont
     volumes:
-      - ./prometheus.yml:/etc/prometheus/
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
     networks:
@@ -60,7 +61,6 @@ services:
       - prometheus
     volumes:
       - grafana_data:/var/lib/grafana
-
 
 volumes:
   postgres_data:
