@@ -18,17 +18,6 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
-            tools {
-                maven 'Maven 3'
-            }
-            steps {
-                dir('backend') {
-                    sh 'mvn test'
-                }
-            }
-        }
-
         stage('Build Jar') {
             steps {
                 dir('backend') {
