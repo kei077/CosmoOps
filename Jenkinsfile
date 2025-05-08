@@ -30,9 +30,6 @@ pipeline {
         }
 
         stage('Build Jar') {
-            tools {
-                maven 'Maven 3'
-            }
             steps {
                 dir('backend') {
                     sh 'mvn clean package -DskipTests'
