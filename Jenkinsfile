@@ -1,33 +1,23 @@
 pipeline {
-    agent none
-
-    tools {
-        maven 'Maven 3'
-    }
-
-    environment {
-        DOCKER_BUILDKIT = '1'
-        IMAGE_NAME      = 'kei077/cosmo-backend'
-        SONAR_HOST      = 'http://10.1.3.43:9000'
-    }
+    agent any
 
     stages {
         stage('Checkout') {
-            agent any                
             steps {
                 checkout scm
             }
         }
 
         stage('Verify Structure') {
-            agent { label 'docker' }
             steps {
                 sh 'ls -la ${WORKSPACE}/backend'
             }
         }
 
         stage('Build Jar') {
-            agent { label 'docker' }
+            tools {
+                maven 'Maven 3'
+            }
             steps {
                 dir('backend') {
                     sh 'mvn clean package -DskipTests'
@@ -35,20 +25,40 @@ pipeline {
             }
         }
 
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t kei077/cosmo-backend:${BUILD_NUMBER} ./backend"
+                    sh "docker tag kei077/cosmo-backend:${BUILD_NUMBER} kei077/cosmo-backend:latest"
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push kei077/cosmo-backend:${BUILD_NUMBER}
+                        docker push kei077/cosmo-backend:latest
+                    '''
+                }
+            }
+        }
+
         stage('SonarQube Analysis') {
-            agent { label 'docker' }
+            tools {
+                maven 'Maven 3'
+            }
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    withCredentials([string(
-                        credentialsId: 'SONAR_TOKEN',
-                        variable: 'SONAR_TOKEN'
-                    )]) {
+                    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                         sh """
                             cd backend && \
                             mvn sonar:sonar \
-                                -Dsonar.projectKey=cosmo-backend \
-                                -Dsonar.host.url=${SONAR_HOST} \
-                                -Dsonar.login=$SONAR_TOKEN
+                            -Dsonar.projectKey=cosmo-backend \
+                            -Dsonar.host.url=http://192.168.240.198:9000 \
+                            -Dsonar.login=$SONAR_TOKEN
                         """
                     }
                 }
@@ -56,22 +66,23 @@ pipeline {
         }
 
         stage('Run App') {
-            agent { label 'docker' }
+            when {
+                expression { currentBuild.resultIsBetterOrEqualTo('SUCCESS') }
+            }
             steps {
-                echo 'Launching app with Docker Compose…'
-                sh 'docker compose up -d'
+                echo "Launching app with Docker Compose..."
+                sh 'docker-compose up -d'
             }
         }
     }
 
     post {
-
         always {
-            echo 'Cleaning up Docker containers…'
-            sh 'docker compose down || true'
+            echo "Cleaning up Docker containers..."
+            sh 'docker-compose down || true'
         }
         failure {
-            echo 'Pipeline failed. Please check the logs above.'
+            echo "Pipeline failed. Please check the logs above."
         }
     }
 }
