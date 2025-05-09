@@ -112,6 +112,30 @@ pipeline {
             }
         }
 
+        stage('Deploy & Smoke-test') {
+            steps {
+                sh '''
+                # clean previous run
+                docker compose -f docker-compose.prod.yml down --remove-orphans
+
+                # pull fresh images & start stack
+                docker compose -f docker-compose.prod.yml pull
+                docker compose -f docker-compose.prod.yml up -d
+
+                # wait (max ~1 min) for backend to report healthy
+                echo ">> Waiting for backend health …"
+                for i in {1..20}; do
+                    if curl -fs http://localhost:8081/actuator/health | grep -q '"UP"'; then
+                    echo "Backend is UP";
+                    exit 0
+                    fi
+                    sleep 3
+                done
+                echo "Backend failed to become healthy";
+                exit 1
+                '''
+            }
+        }
     }
 
     post {
