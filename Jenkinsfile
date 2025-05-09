@@ -1,8 +1,14 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'docker:dind'
+      args '--privileged'
+    }
 
   environment {
     DOCKER_BUILDKIT = '1'
+||  PATH = "/usr/local/bin:/usr/bin:/bin:${PATH}"
+
   }
 
   stages {
@@ -19,13 +25,6 @@ pipeline {
     }
 
     stage('Run Tests') {
-      agent {
-        docker {
-          image 'maven:3.9.1-openjdk-17'
-          args  '-v /var/run/docker.sock:/var/run/docker.sock \
-                 -v /var/jenkins_home/.m2:/root/.m2'
-        }
-      }
       steps {
         dir('backend') {
           sh 'mvn test'
@@ -34,12 +33,6 @@ pipeline {
     }
 
     stage('Build Jar') {
-      agent {
-        docker {
-          image 'maven:3.9.1-openjdk-17'
-          args  '-v /var/jenkins_home/.m2:/root/.m2'
-        }
-      }
       steps {
         dir('backend') {
           sh 'mvn clean package -DskipTests'
@@ -48,12 +41,6 @@ pipeline {
     }
 
     stage('Build Docker Image') {
-      agent {
-        docker {
-          image 'docker:24.0.5'
-          args  '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-      }
       steps {
         dir('backend') {
           sh """
@@ -69,12 +56,6 @@ pipeline {
     }
 
     stage('Push Docker Image') {
-      agent {
-        docker {
-          image 'docker:24.0.5'
-          args  '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-      }
       steps {
         withCredentials([usernamePassword(
           credentialsId: 'dockerhub-cred',
@@ -92,12 +73,6 @@ pipeline {
     }
 
     stage('SonarQube Analysis') {
-      agent {
-        docker {
-          image 'maven:3.9.1-openjdk-17'
-          args  '-v /var/jenkins_home/.m2:/root/.m2'
-        }
-      }
       steps {
         withSonarQubeEnv('SonarQube') {
           withCredentials([string(
@@ -121,12 +96,6 @@ pipeline {
       when {
         expression { currentBuild.resultIsBetterOrEqualTo('SUCCESS') }
       }
-      agent {
-        docker {
-          image 'docker/compose:2.18.1'
-          args  '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-      }
       steps {
         echo "Launching app with Docker Compose..."
         sh 'docker-compose up -d'
@@ -137,13 +106,7 @@ pipeline {
   post {
     always {
       echo "Cleaning up Docker containers..."
-      script {
-        docker.image('docker/compose:2.18.1').inside(
-          '-v /var/run/docker.sock:/var/run/docker.sock'
-        ) {
-          sh 'docker-compose down --remove-orphans || true'
-        }
-      }
+      sh 'docker-compose down --remove-orphans || true'
     }
     failure {
       echo "Pipeline failed. Please check the logs above."
