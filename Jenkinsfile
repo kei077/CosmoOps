@@ -30,6 +30,22 @@ pipeline {
                 }
             }
         }
+
+        stage('Docker build (local)') {
+            environment {
+                IMAGE_NAME = 'cosmo-backend'           // simple tag for now
+                IMAGE_TAG  = "${env.BUILD_NUMBER}"     // Jenkins build #
+            }
+            steps {
+                sh '''
+                  echo ">> Docker client & server:"
+                  docker version
+
+                  echo ">> Building backend image:"
+                  docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ${PROJECT_DIR}
+                '''
+            }
+        }
     }
 
     post {
