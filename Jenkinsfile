@@ -114,26 +114,44 @@ pipeline {
 
         stage('Deploy & Smoke-test') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'db-creds',
-                                                 usernameVariable: 'DB_USER',
-                                                 passwordVariable: 'DB_PASS')]) {
-                    sh '''
-                      # DB_USER / DB_PASS exist only inside this block
-                      export DATABASE_USERNAME=$DB_USER
-                      export DATABASE_PASSWORD=$DB_PASS
+                withCredentials([
+                    usernamePassword(credentialsId: 'db-creds',
+                                    usernameVariable: 'DB_USER',
+                                    passwordVariable: 'DB_PASS')
+                ]) {
 
-                      docker compose -f docker-compose.prod.yml \
-                        down --remove-orphans
-                      docker compose -f docker-compose.prod.yml \
-                        pull
-                      docker compose -f docker-compose.prod.yml \
-                        up -d
-                      …
+                    sh '''
+                        set -e                          # stop as soon as anything fails
+                        echo "▶ exporting DB credentials for compose"
+                        export DATABASE_USERNAME="$DB_USER"
+                        export DATABASE_PASSWORD="$DB_PASS"
+
+                        echo "▶ Tearing down previous stack"
+                        docker compose -f docker-compose.prod.yml down --remove-orphans
+
+                        echo "▶ Pulling images"
+                        docker compose -f docker-compose.prod.yml pull
+
+                        echo "▶ Starting stack"
+                        docker compose -f docker-compose.prod.yml up -d
+
+                        echo "▶ Waiting for backend health check"
+                        for i in $(seq 1 20); do
+                            if curl -fs http://localhost:8081/actuator/health \
+                                | grep -q '"UP"'; then
+                                echo "   Backend is UP ✔"
+                                exit 0
+                            fi
+                            sleep 3
+                        done
+
+                        echo "❌ Backend failed to become healthy in time"
+                        docker compose -f docker-compose.prod.yml logs backend
+                        exit 1
                     '''
                 }
             }
         }
-
     }
 
     post {
