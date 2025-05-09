@@ -121,8 +121,9 @@ pipeline {
 
                 echo ">> Waiting for backend health …"
                 for i in $(seq 1 20); do
-                    # curl may fail (exit!=0) while the service is still booting
-                    if curl -fs http://localhost:8081/actuator/health 2>/dev/null \
+                    # run curl *inside* the backend container
+                    if docker compose -f docker-compose.prod.yml exec -T backend \
+                        curl -fs http://localhost:8081/actuator/health 2>/dev/null \
                         | grep -q '"UP"'; then
                     echo "Backend is UP after ${i} checks 🎉"
                     exit 0
