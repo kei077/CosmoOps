@@ -5,6 +5,10 @@ pipeline {
         maven 'Maven 3'
     }
 
+    environment {
+        PROJECT_DIR = 'backend'
+    }
+
     stages {
         stage('Checkout') {
             steps { checkout scm }
@@ -30,7 +34,7 @@ pipeline {
 
     post {
         failure {
-            echo 'Pipeline failed check the stage logs above.'
+            echo 'Pipeline failed – check the stage logs above.'
         }
     }
 }
