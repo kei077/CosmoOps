@@ -46,23 +46,9 @@ pipeline {
                 }
             }
         }
-
-        stage('Run App') {
-            when {
-                expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' }
-            }
-            steps {
-                echo 'Launching app with Docker Compose…'
-                sh 'docker compose up -d --build'
-            }
-        }
     }
 
     post {
-        always {
-            echo 'Cleaning up Docker containers…'
-            sh 'docker compose down || true'
-        }
         failure {
             echo 'Pipeline failed – check the stage logs above.'
         }
