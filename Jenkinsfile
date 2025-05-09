@@ -7,7 +7,7 @@ pipeline {
 
   environment {
     DOCKER_BUILDKIT = '1'
-||  PATH = "/usr/local/bin:/usr/bin:/bin:${PATH}"
+    PATH = "/usr/local/bin:/usr/bin:/bin:${PATH}"
 
   }
 
