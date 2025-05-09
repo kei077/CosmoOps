@@ -86,6 +86,32 @@ pipeline {
             }
         }
 
+        stage('Frontend - push image') {
+            environment {
+                REGISTRY      = 'docker.io'             // or ghcr.io
+                REPOSITORY    = 'kei077'                // your account/org
+                FE_IMAGE_NAME = 'cosmo-frontend'
+                FE_IMAGE_TAG  = "${env.BUILD_NUMBER}"
+                DOCKER_CREDS  = credentials('dockerhub-login')
+            }
+            steps {
+                sh '''
+                  echo ">> Logging in to registry"
+                  echo "$DOCKER_CREDS_PSW" | docker login $REGISTRY \
+                       -u "$DOCKER_CREDS_USR" --password-stdin
+
+                  echo ">> Tagging and pushing frontend image"
+                  docker tag  ${FE_IMAGE_NAME}:${FE_IMAGE_TAG} \
+                              $REPOSITORY/${FE_IMAGE_NAME}:${FE_IMAGE_TAG}
+                  docker tag  ${FE_IMAGE_NAME}:${FE_IMAGE_TAG} \
+                              $REPOSITORY/${FE_IMAGE_NAME}:latest
+
+                  docker push $REPOSITORY/${FE_IMAGE_NAME}:${FE_IMAGE_TAG}
+                  docker push $REPOSITORY/${FE_IMAGE_NAME}:latest
+                '''
+            }
+        }
+
     }
 
     post {
