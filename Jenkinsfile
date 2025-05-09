@@ -49,8 +49,8 @@ pipeline {
 
         stage('Frontend Docker build (local)') {
             environment {
-                FE_IMAGE_NAME = 'cosmo-frontend'          // pick any tag name
-                FE_IMAGE_TAG  = "${env.BUILD_NUMBER}"     // keep in sync
+                FE_IMAGE_NAME = 'cosmo-frontend'         
+                FE_IMAGE_TAG  = "${env.BUILD_NUMBER}"     
             }
             steps {
                 sh '''
@@ -62,8 +62,8 @@ pipeline {
 
         stage('Push image to registry') {
             environment {
-                REGISTRY      = 'docker.io'           // or ghcr.io
-                REPOSITORY    = 'kei077'              // your account/org
+                REGISTRY      = 'docker.io'          
+                REPOSITORY    = 'kei077'             
                 IMAGE_NAME    = 'cosmo-backend'
                 IMAGE_TAG     = "${env.BUILD_NUMBER}"
                 DOCKER_CREDS  = credentials('dockerhub-login')
@@ -88,8 +88,8 @@ pipeline {
 
         stage('Frontend - push image') {
             environment {
-                REGISTRY      = 'docker.io'             // or ghcr.io
-                REPOSITORY    = 'kei077'                // your account/org
+                REGISTRY      = 'docker.io'            
+                REPOSITORY    = 'kei077'               
                 FE_IMAGE_NAME = 'cosmo-frontend'
                 FE_IMAGE_TAG  = "${env.BUILD_NUMBER}"
                 DOCKER_CREDS  = credentials('dockerhub-login')

@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: HamlaouiDB-Cont
+    environment:
+      POSTGRES_DB: CosmoDB
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [my_network]
+
+  backend:
+    image: kei077/cosmo-backend:latest     # ← image, no build
+    container_name: HamlaouiBackend-Cont
+    environment:
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      - "8081:8081"
+    depends_on: [postgres]
+    networks: [my_network]
+
+  frontend:
+    image: kei077/cosmo-frontend:latest    # ← image, no build
+    container_name: HamlaouiFrontend-Cont
+    ports:
+      - "5173:80"                          # nginx will serve on 80 later
+    depends_on: [backend]
+    networks: [my_network]
+
+  prometheus:
+    image: prom/prometheus
+    container_name: HamlaouiPrometheus-Cont
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports: ["9090:9090"]
+    networks: [my_network]
+
+  grafana:
+    image: grafana/grafana
+    container_name: HamlaouiGrafana-Cont
+    ports: ["3000:3000"]
+    depends_on: [prometheus]
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks: [my_network]
+
+volumes:
+  postgres_data:
+  grafana_data:
+
+networks:
+  my_network:
