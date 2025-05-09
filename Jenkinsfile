@@ -31,15 +31,13 @@ pipeline {
             }
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                         sh """
                             cd backend && \
                             mvn sonar:sonar \
                             -Dsonar.projectKey=cosmo-backend \
                             -Dsonar.host.url=http://10.1.3.43:9000 \
-                            -Dsonar.login=$SONAR_TOKEN
+                            -Dsonar.login=squ_929a420eb1f9d80b3c38b92ddb06510a6a40e0c7
                         """
-                    }
                 }
             }
         }
