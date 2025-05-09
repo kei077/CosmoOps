@@ -114,25 +114,23 @@ pipeline {
 
         stage('Deploy & Smoke-test') {
             steps {
-                sh '''
-                docker compose -f docker-compose.prod.yml down --remove-orphans
-                docker compose -f docker-compose.prod.yml pull
-                docker compose -f docker-compose.prod.yml up -d
+                withCredentials([usernamePassword(credentialsId: 'db-creds',
+                                                 usernameVariable: 'DB_USER',
+                                                 passwordVariable: 'DB_PASS')]) {
+                    sh '''
+                      # DB_USER / DB_PASS exist only inside this block
+                      export DATABASE_USERNAME=$DB_USER
+                      export DATABASE_PASSWORD=$DB_PASS
 
-                echo ">> Waiting for backend health …"
-                for i in $(seq 1 20); do
-                    # run curl *inside* the backend container
-                    if docker compose -f docker-compose.prod.yml exec -T backend \
-                        curl -fs http://localhost:8081/actuator/health 2>/dev/null \
-                        | grep -q '"UP"'; then
-                    echo "Backend is UP after ${i} checks 🎉"
-                    exit 0
-                    fi
-                    sleep 3
-                done
-                echo "Backend failed to become healthy in time"
-                exit 1
-                '''
+                      docker compose -f docker-compose.prod.yml \
+                        down --remove-orphans
+                      docker compose -f docker-compose.prod.yml \
+                        pull
+                      docker compose -f docker-compose.prod.yml \
+                        up -d
+                      …
+                    '''
+                }
             }
         }
 
