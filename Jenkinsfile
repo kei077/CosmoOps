@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_BUILDKIT = '1'
-    }
-
     stages {
         stage('Checkout') {
             steps {
