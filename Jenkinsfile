@@ -121,7 +121,7 @@ pipeline {
                 ]) {
 
                     sh '''
-                        set -e                          # stop as soon as anything fails
+                        set -e                        
                         echo "▶ exporting DB credentials for compose"
                         export DATABASE_USERNAME="$DB_USER"
                         export DATABASE_PASSWORD="$DB_PASS"
@@ -137,9 +137,12 @@ pipeline {
 
                         echo "▶ Waiting for backend health check"
                         for i in $(seq 1 20); do
-                            if curl -fs http://localhost:8081/actuator/health \
-                                | grep -q '"UP"'; then
-                                echo "   Backend is UP ✔ (waited ${i}s)"
+                            echo "Attempt $i: Checking backend health..."
+                            HEALTH_RESPONSE=$(curl -s http://localhost:8081/actuator/health || echo "Failed to connect")
+                            echo "Response: $HEALTH_RESPONSE"
+                            
+                            if echo "$HEALTH_RESPONSE" | grep -q "UP"; then
+                                echo "✅ Backend is UP (waited ${i}s)"
                                 exit 0
                             fi
                             sleep 3
