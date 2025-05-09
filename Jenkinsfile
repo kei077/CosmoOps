@@ -33,8 +33,8 @@ pipeline {
 
         stage('Docker build (local)') {
             environment {
-                IMAGE_NAME = 'cosmo-backend'           // simple tag for now
-                IMAGE_TAG  = "${env.BUILD_NUMBER}"     // Jenkins build #
+                IMAGE_NAME = 'cosmo-backend'          
+                IMAGE_TAG  = "${env.BUILD_NUMBER}"  
             }
             steps {
                 sh '''
@@ -46,6 +46,33 @@ pipeline {
                 '''
             }
         }
+
+        stage('Push image to registry') {
+            environment {
+                REGISTRY      = 'docker.io'           // or ghcr.io
+                REPOSITORY    = 'kei077'              // your account/org
+                IMAGE_NAME    = 'cosmo-backend'
+                IMAGE_TAG     = "${env.BUILD_NUMBER}"
+                DOCKER_CREDS  = credentials('dockerhub-login')
+            }
+            steps {
+                sh '''
+                  echo ">> Logging in to registry"
+                  echo "$DOCKER_CREDS_PSW" | docker login $REGISTRY \
+                       -u "$DOCKER_CREDS_USR" --password-stdin
+
+                  echo ">> Tagging and pushing"
+                  docker tag  ${IMAGE_NAME}:${IMAGE_TAG} \
+                              $REPOSITORY/${IMAGE_NAME}:${IMAGE_TAG}
+                  docker tag  ${IMAGE_NAME}:${IMAGE_TAG} \
+                              $REPOSITORY/${IMAGE_NAME}:latest
+
+                  docker push $REPOSITORY/${IMAGE_NAME}:${IMAGE_TAG}
+                  docker push $REPOSITORY/${IMAGE_NAME}:latest
+                '''
+            }
+        }
+
     }
 
     post {
