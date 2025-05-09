@@ -47,6 +47,19 @@ pipeline {
             }
         }
 
+        stage('Frontend Docker build (local)') {
+            environment {
+                FE_IMAGE_NAME = 'cosmo-frontend'          // pick any tag name
+                FE_IMAGE_TAG  = "${env.BUILD_NUMBER}"     // keep in sync
+            }
+            steps {
+                sh '''
+                  echo ">> Building frontend image:"
+                  docker build -t ${FE_IMAGE_NAME}:${FE_IMAGE_TAG} frontend
+                '''
+            }
+        }
+
         stage('Push image to registry') {
             environment {
                 REGISTRY      = 'docker.io'           // or ghcr.io
