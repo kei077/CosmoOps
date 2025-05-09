@@ -35,33 +35,6 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
-            agent { label 'docker' }
-            steps {
-                sh """
-                    docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ./backend
-                    docker tag   ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
-                """
-            }
-        }
-
-        stage('Push Docker Image') {
-            agent { label 'docker' }
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-cred',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push ${IMAGE_NAME}:${BUILD_NUMBER}
-                        docker push ${IMAGE_NAME}:latest
-                    '''
-                }
-            }
-        }
-
         stage('SonarQube Analysis') {
             agent { label 'docker' }
             steps {
