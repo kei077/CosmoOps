@@ -9,7 +9,9 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
+    
+    @Autowired 
+    private PasswordEncoder passwordEncoder;
 
     public void save(String username, String rawPassword, String email) {
         MyUser user = new MyUser();
