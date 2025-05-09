@@ -139,7 +139,7 @@ pipeline {
                         for i in $(seq 1 20); do
                             if curl -fs http://localhost:8081/actuator/health \
                                 | grep -q '"UP"'; then
-                                echo "   Backend is UP ✔"
+                                echo "   Backend is UP ✔ (waited ${i}s)"
                                 exit 0
                             fi
                             sleep 3
