@@ -4,6 +4,7 @@ pipeline {
       image 'docker:dind'
       args '--privileged'
     }
+  }
 
   environment {
     DOCKER_BUILDKIT = '1'
