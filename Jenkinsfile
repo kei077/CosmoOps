@@ -5,10 +5,6 @@ pipeline {
         maven 'Maven 3'
     }
 
-    environment {
-        PROJECT_DIR = 'backend'
-    }
-
     stages {
         stage('Checkout') {
             steps { checkout scm }
@@ -30,27 +26,11 @@ pipeline {
                 }
             }
         }
-
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        dir("$PROJECT_DIR") {
-                            sh '''
-                                mvn -B sonar:sonar \
-                                  -Dsonar.projectKey=cosmo-backend \
-                                  -Dsonar.login=$SONAR_TOKEN
-                            '''
-                        }
-                    }
-                }
-            }
-        }
     }
 
     post {
         failure {
-            echo 'Pipeline failed – check the stage logs above.'
+            echo 'Pipeline failed check the stage logs above.'
         }
     }
 }
