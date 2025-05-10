@@ -113,77 +113,84 @@ pipeline {
         }
 
         stage('Deploy & Smoke-test') {
-                steps {
-                    withCredentials([usernamePassword(
-                            credentialsId: 'db-creds',
-                            usernameVariable: 'DB_USER',
-                            passwordVariable: 'DB_PASS')]) {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'db-creds',
+                    usernameVariable: 'DB_USER',
+                    passwordVariable: 'DB_PASS')]) {
 
-                        // Wrapping the whole block so we can intercept failures
-                        script {
-                            try {
-                                sh '''
-                                    set -euo pipefail
-                                    echo "▶ exporting DB credentials for compose"
-                                    export DATABASE_USERNAME=$DB_USER
-                                    export DATABASE_PASSWORD=$DB_PASS
+                /* Run the whole section with bash instead of /bin/sh */
+                sh(script: '''
+                    #!/usr/bin/env bash
+                    set -euo pipefail
 
-                                    echo "▶ Tearing down previous stack"
-                                    docker compose -f docker-compose.prod.yml down --remove-orphans
+                    echo "▶ exporting DB credentials for compose"
+                    export DATABASE_USERNAME=$DB_USER
+                    export DATABASE_PASSWORD=$DB_PASS
 
-                                    echo "▶ Pulling images"
-                                    docker compose -f docker-compose.prod.yml pull
+                    echo "▶ Tearing down previous stack"
+                    docker compose -f docker-compose.prod.yml down --remove-orphans
 
-                                    echo "▶ Starting stack"
-                                    docker compose -f docker-compose.prod.yml up -d
+                    echo "▶ Pulling images"
+                    docker compose -f docker-compose.prod.yml pull
 
-                                    echo "▶ Waiting for backend health check"
-                                    for i in $(seq 1 20); do
-                                    if curl -fs http://localhost:8081/actuator/health | grep -q '"UP"'; then
-                                        echo "Backend is UP ✔ (waited $((i*3))s)"
-                                        exit 0
-                                    fi
-                                    sleep 3
-                                    done
+                    echo "▶ Starting stack"
+                    docker compose -f docker-compose.prod.yml up -d
 
-                                    # ----- If we reach here the backend never became healthy -----
-                                    echo "❌ Backend failed to become healthy in time"
-                                    exit 1
-                                '''
-                            } catch (err) {
-                                // --- 🔍 Extra debugging on failure ---
-                                sh '''
-                                    echo "▶ Debugging container connectivity"
+                    echo "▶ Waiting for backend health check"
+                    for i in {1..20}; do
+                    if curl -fs http://localhost:8081/actuator/health | grep -q '"UP"'; then
+                        echo "Backend is UP ✔ (waited $((i*3))s)"
+                        exit 0
+                    fi
+                    sleep 3
+                    done
 
-                                    echo "→ docker ps -a"
-                                    docker ps -a || true
-
-                                    # Get the real container ID for the backend service
-                                    BACK_ID=$(docker compose -f docker-compose.prod.yml ps -q backend || true)
-
-                                    if [ -n "$BACK_ID" ]; then
-                                    echo; echo "→ Network settings for backend ($BACK_ID)"
-                                    docker inspect "$BACK_ID" --format '{{json .NetworkSettings}}' | jq .
-
-                                    echo; echo "→ Curl from Jenkins host"
-                                    curl -vv http://localhost:8081/actuator/health || true
-
-                                    echo; echo "→ Curl from inside backend container"
-                                    docker exec "$BACK_ID" curl -vv http://localhost:8081/actuator/health || true
-
-                                    echo; echo "→ Logs (last 200 lines)"
-                                    docker logs --tail 200 "$BACK_ID" || true
-                                    else
-                                    echo "Backend container ID could not be determined."
-                                    fi
-                                '''
-                                throw err         // re-throw so the stage still fails
-                            }
-                        }
-                    }
+                    # If we’re still here the check failed -> throw so the outer catch runs
+                    echo "❌ Backend failed to become healthy in time"
+                    false
+                ''', shell: '/bin/bash')  // ← run with bash
                 }
             }
+            post {
+                failure {
+                /* extra-debug section — will only run on failure */
+                sh(script: '''
+                    #!/usr/bin/env bash
+                    echo "▶ Debugging container connectivity"
 
+                    echo "→ docker ps -a"
+                    docker ps -a || true
+
+                    BACK_ID=$(docker compose -f docker-compose.prod.yml ps -q backend || true)
+
+                    if [[ -n "$BACK_ID" ]]; then
+                    echo; echo "→ Network settings for backend ($BACK_ID)"
+                    if command -v jq >/dev/null 2>&1; then
+                        docker inspect "$BACK_ID" --format '{{json .NetworkSettings}}' | jq .
+                    else
+                        docker inspect "$BACK_ID"
+                    fi
+
+                    echo; echo "→ Curl from Jenkins host"
+                    curl -vv http://localhost:8081/actuator/health || true
+
+                    echo; echo "→ Curl from inside backend container"
+                    docker exec "$BACK_ID" curl -vv http://localhost:8081/actuator/health || true
+
+                    echo; echo "→ Logs (last 200 lines)"
+                    docker logs --tail 200 "$BACK_ID" || true
+                    else
+                    echo "Backend container not found."
+                    fi
+                ''', shell: '/bin/bash')
+                }
+            }
+            }
+
+    
+                
+        }
     }
 
     post {
